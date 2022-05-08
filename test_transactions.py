@@ -1,7 +1,7 @@
 import numpy  as np
 import pandas as pd
 
-from scompta import transactions
+from scompta import transactions, accounts
 
 ################################
 

@@ -62,5 +62,3 @@ def input(df, account_name: str):
 
 def output(df, account_name: str):
     return df.loc[df["from"] == account_name]
-
-

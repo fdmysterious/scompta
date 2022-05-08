@@ -16,6 +16,7 @@ import pandas as pd
 from dataclasses import dataclass, field, asdict
 from enum        import Enum
 from pathlib     import Path
+from typing      import Optional
 
 log = logging.getLogger("SCompta Accounts")
 
@@ -42,6 +43,7 @@ class Account:
     path: str
     name: str
     type: Account_Type
+    tag:  Optional[str] = field(default=None)
 
 
 # ┌────────────────────────────────────────┐

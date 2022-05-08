@@ -79,9 +79,17 @@ def undefined_accounts(df, accs_df):
 # │ Input/Output                           │
 # └────────────────────────────────────────┘
 
-def input(df, account_name: str):
-    return df.loc[df["to"] == account_name]
+def input(df, account_names: str):
+    accs = account_names
+    if isinstance(accs, str):
+        accs = [accs]
+
+    return df.loc[df["to"].isin(accs)]
 
 
-def output(df, account_name: str):
-    return df.loc[df["from"] == account_name]
+def output(df, account_names: str):
+    accs = account_names
+    if isinstance(accs, str):
+        accs = [accs]
+
+    return df.loc[df["from"].isin(accs)]

@@ -1,0 +1,1 @@
+# SCompta init file

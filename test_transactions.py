@@ -5,12 +5,15 @@ from scompta import transactions
 
 ################################
 
+account_name="actifs/florian/ca_courant"
+
 df = transactions.load("transactions.csv")
 
-v_in    = transactions.input(df, "ca_courant")
-v_out   = transactions.output(df, "ca_courant")
-
 print(df)
-print("Input   for ca_courant: ", v_in ["amount"].sum())
-print("Output  for ca_courant: ", v_out["amount"].sum())
-print("Balance for ca_courant: ", v_in["amount"].sum() - v_out["amount"].sum())
+
+v_in    = transactions.input (df, account_name)
+v_out   = transactions.output(df, account_name)
+
+print(f"Input   for {account_name}: ", v_in ["amount"].sum())
+print(f"Output  for {account_name}: ", v_out["amount"].sum())
+print(f"Balance for {account_name}: ", v_in["amount"].sum() - v_out["amount"].sum())

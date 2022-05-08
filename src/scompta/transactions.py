@@ -32,12 +32,18 @@ def __money_conv(x):
 # └────────────────────────────────────────┘
 
 def load(fpath: Path):
-    return pd.read_csv(str(fpath),
+    csv_data = pd.read_csv(str(fpath),
         sep=";",
         converters={
             "amount": __money_conv
-        }
+        },
+        skipinitialspace=True
     )
+
+    # Check shape
+    # TODO #
+
+    return csv_data
 
 
 def save(fpath: Path, df: pd.DataFrame):
@@ -56,3 +62,5 @@ def input(df, account_name: str):
 
 def output(df, account_name: str):
     return df.loc[df["from"] == account_name]
+
+

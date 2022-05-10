@@ -14,6 +14,9 @@ import pandas as pd
 from   pathlib import Path
 from   money   import Money
 
+from .         import accounts
+from .accounts import Account_Type
+
 
 # ┌────────────────────────────────────────┐
 # │ Helper functions                       │
@@ -32,6 +35,8 @@ def __money_conv(x):
 # └────────────────────────────────────────┘
 
 def load(fpath: Path):
+    fpath = Path(fpath)
+
     csv_data = pd.read_csv(str(fpath),
         sep=";",
         converters={
@@ -79,17 +84,25 @@ def undefined_accounts(df, accs_df):
 # │ Input/Output                           │
 # └────────────────────────────────────────┘
 
-def input(df, account_names: str):
+def input(df, df_accounts, account_names: str):
     accs = account_names
     if isinstance(accs, str):
         accs = [accs]
 
-    return df.loc[df["to"].isin(accs)]
+    if df_accounts is None:
+        return df.loc[df["to"].isin(accs)]
+    else:
+        df_from = df_accounts.loc[df["from"]].reset_index()
+        return df.loc[df["to"].isin(accs) & (df_from["type"] == Account_Type.Income)]
 
 
-def output(df, account_names: str):
+def output(df, df_accounts, account_names: str):
     accs = account_names
     if isinstance(accs, str):
         accs = [accs]
-
-    return df.loc[df["from"].isin(accs)]
+    
+    if df_accounts is None:
+        return df.loc[df["from"].isin(accs)]
+    else:
+        df_to = df_accounts.loc[df["to"]].reset_index()
+        return df.loc[df["from"].isin(accs) & (df_to["type"] == Account_Type.Outcome)]

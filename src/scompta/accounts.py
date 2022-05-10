@@ -47,10 +47,25 @@ class Account:
 
 
 # ┌────────────────────────────────────────┐
+# │ Operations on Accounts DataFrame       │
+# └────────────────────────────────────────┘
+
+
+def with_type(df, tt: Account_Type):
+    return df.loc[df["type"] == tt]
+
+
+# ┌────────────────────────────────────────┐
 # │ Helpers                                │
 # └────────────────────────────────────────┘
 
 def load_from_dir(path: Path):
+    """
+    Loads the account hierarchy from given folder. Returns a DataFrame
+    containing the account rows.
+    """
+    path = Path(path)
+
     log.info(f"Load accounts from path: {path}")
 
     r = []

@@ -38,6 +38,7 @@ class SComptaWeb_Config:
             dir_periods  = Path(data["directories"]["periods" ])
         )
 
+
 # ┌────────────────────────────────────────┐
 # │ Transactions endpoints                 │
 # └────────────────────────────────────────┘
@@ -87,12 +88,41 @@ class API_Transactions_Handler:
     async def raise_error(self, err_msg, err_code):
         return web.json_response({"error": err_msg}, status=err_code)
 
+    # ────────────── POST stuff ────────────── #
+    
+    async def post(self, request):
+        """
+        Post data:
+            - day
+            - time
+            - label
+            - from
+            - to
+            - amount
+            - tag [Optional]
+        """
+        try:
+            data = await request.json()
+            return web.json_response({k:v for k,v in data.items()}, status=200)
+
+        except Exception as exc:
+            return web.json_response({
+                "error": f"Could not post transaction: {exc!s}",
+                "traceback": traceback.format_exc().split("\n")
+            }, status=500)
+
+
+
+
     # ──────────── Routes property ─────────── #
 
     def routes(self, prefix=""):
         return [
-            web.get(prefix + "/transactions/{period:\d{4}-\d{2}}", self.all_get),
-            web.get(prefix + "/transactions/{inv_period}"        , lambda r: self.raise_error(f"Invalid period name: {r.match_info['inv_period']}", 404)),
+            web.get (prefix + "/transactions/{period:\d{4}-\d{2}}", self.all_get),
+            web.get (prefix + "/transactions/{inv_period}"        , lambda r: self.raise_error(f"Invalid period name: {r.match_info['inv_period']}", 404)),
+
+            web.post(prefix + "/transactions/{period:\d{4}-\d{2}}", self.post),
+            web.post(prefix + "/transactions/{inv_period}"        , lambda r: self.raise_error(f"Invalid period name: {r.match_info['inv_period']}", 404)),
         ]
 
 

@@ -3,3 +3,6 @@ transactions.csv
 __pycache__
 *.egg-info
 dist
+
+accounts/
+periods/

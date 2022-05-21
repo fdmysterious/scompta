@@ -43,6 +43,15 @@ class SComptaWeb_Config:
 # │ Transactions endpoints                 │
 # └────────────────────────────────────────┘
 
+class API_Error(Exception):
+    """
+    Helper class for API errors
+    """
+    def __init__(self, msg, error_code=500):
+        super().__init__(msg)
+        self.error_code = error_code
+
+
 class API_Transactions_Handler:
     def __init__(self, config):
         self.config = config
@@ -52,6 +61,14 @@ class API_Transactions_Handler:
     def _transactions_path_for_period(self, period):
         return self.config.dir_periods / period / "transactions.csv"
 
+    def _load_transactions_period(self, period):
+        transactions_path = self._transactions_path_for_period(period)
+
+        if not transactions_path.exists():
+            raise API_Error(f"transactions for period {period} not found", error_code=404)
+
+        return transactions.load(transactions_path)
+
 
     # ─────────────── GET stuff ────────────── #
 
@@ -60,15 +77,15 @@ class API_Transactions_Handler:
             # Extract period
             period = request.match_info["period"]
 
-            # Check period existence
-            path_transactions = self._transactions_path_for_period(period)
-            if not path_transactions.exists():
-                return web.json_response({
-                    "error": f"Could not find period {period}"
-                }, status=404)
+            #path_transactions = self._transactions_path_for_period(period)
+            #if not path_transactions.exists():
+            #    return web.json_response({
+            #        "error": f"Could not find period {period}"
+            #    }, status=404)
+
 
             # Load period's transactions
-            df_tr           = transactions.load(path_transactions)
+            df_tr = self._load_transactions_period(period)
             df_tr["amount"] = df_tr["amount"].transform(lambda x: {"currency": x.currency, "amount": str(x.amount)})
 
             # DataFrame with NaN columns as None
@@ -78,6 +95,12 @@ class API_Transactions_Handler:
             dict_tr = df_tr.to_dict(orient="records")
 
             return web.json_response({"data": dict_tr}, status=200)
+
+        except API_Error as exc:
+            return web.json_response({
+                "error": f"Could not load transactions: {exc!s}",
+                "traceback": traceback.format_exc().split("\n")
+            }, status=exc.error_code)
 
         except Exception as exc:
             return web.json_response({
@@ -103,7 +126,26 @@ class API_Transactions_Handler:
         """
         try:
             data = await request.json()
-            return web.json_response({k:v for k,v in data.items()}, status=200)
+
+            # Load transactions
+
+            # Build entry record
+            record = {"day": data["day"], "time": data.get("time", None), "amount": Money(data["amount"]["value"], data["amount"]["currency"])}
+
+            # Build 
+            return web.json_response({}, status=200)
+
+        except KeyError  as exc:
+            return web.json_response({
+                "error": f"Missing field '{exc!s}'",
+                "traceback": traceback.format_exc().split("\n")
+            }, status=500)
+
+        except API_Error as exc:
+            return web.json_response({
+                "error": f"Could not post transaction: {exc!s}",
+                "traceback": traceback.format_exc().split("\n")
+            }, status=exc.error_code)
 
         except Exception as exc:
             return web.json_response({
@@ -149,6 +191,12 @@ class API_Accounts_Handler:
             dict_accounts = df_accounts.to_dict(orient="index")
 
             return web.json_response({"data": dict_accounts}, status=200)
+
+        except API_Error as exc:
+            return web.json_response({
+                "error": f"Could not load accounts: {exc!s}",
+                "traceback": traceback.format_exc().split("\n")
+            }, status=exc.error_code)
 
         except Exception as exc:
             return web.json_response({

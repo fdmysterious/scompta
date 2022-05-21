@@ -13,12 +13,30 @@ import pandas as pd
 import traceback
 import toml
 
-from   aiohttp import web
+from   aiohttp     import web
 import aiohttp_cors
 
-from   scompta import transactions, accounts
+from   scompta     import transactions, accounts
+from   dataclasses import dataclass, asdict
 
-from dataclasses import asdict
+from   pathlib     import Path
+from   functools   import partial
+
+# ┌────────────────────────────────────────┐
+# │ Config dataclass                       │
+# └────────────────────────────────────────┘
+
+@dataclass
+class SComptaWeb_Config:
+    dir_accounts: Path
+    dir_periods:  Path
+
+    @classmethod
+    def from_dict(cls, data):
+        return cls(
+            dir_accounts = Path(data["directories"]["accounts"]),
+            dir_periods  = Path(data["directories"]["periods" ])
+        )
 
 # ┌────────────────────────────────────────┐
 # │ Transactions endpoints                 │
@@ -28,9 +46,28 @@ class API_Transactions_Handler:
     def __init__(self, config):
         self.config = config
 
+    # ──────────────── Helpers ─────────────── #
+    
+    def _transactions_path_for_period(self, period):
+        return self.config.dir_periods / period / "transactions.csv"
+
+
+    # ─────────────── GET stuff ────────────── #
+
     async def all_get(self, request):
         try:
-            df_tr           = transactions.load("transactions.csv")
+            # Extract period
+            period = request.match_info["period"]
+
+            # Check period existence
+            path_transactions = self._transactions_path_for_period(period)
+            if not path_transactions.exists():
+                return web.json_response({
+                    "error": f"Could not find period {period}"
+                }, status=404)
+
+            # Load period's transactions
+            df_tr           = transactions.load(path_transactions)
             df_tr["amount"] = df_tr["amount"].transform(lambda x: {"currency": x.currency, "amount": str(x.amount)})
 
             # DataFrame with NaN columns as None
@@ -47,12 +84,15 @@ class API_Transactions_Handler:
                 "traceback": traceback.format_exc().split("\n")
             }, status=500)
 
+    async def raise_error(self, err_msg, err_code):
+        return web.json_response({"error": err_msg}, status=err_code)
 
     # ──────────── Routes property ─────────── #
 
     def routes(self, prefix=""):
         return [
-            web.get(f"{prefix}/transactions", self.all_get)
+            web.get(prefix + "/transactions/{period:\d{4}-\d{2}}", self.all_get),
+            web.get(prefix + "/transactions/{inv_period}"        , lambda r: self.raise_error(f"Invalid period name: {r.match_info['inv_period']}", 404)),
         ]
 
 
@@ -68,7 +108,8 @@ class API_Accounts_Handler:
 
     async def all_get(self, request):
         try:
-            df_accounts         = accounts.load_from_dir("accounts")
+            # Load accounts
+            df_accounts         = accounts.load_from_dir(self.config.dir_accounts)
             df_accounts["type"] = df_accounts["type"].transform(lambda x: x.value)
 
             # Replace NaN with None
@@ -103,7 +144,7 @@ if __name__ == "__main__":
 
     # Load config
     with open("config.toml", "r") as fhandle:
-        config = toml.load(fhandle)
+        config = SComptaWeb_Config.from_dict(toml.load(fhandle))
 
     # Instanciate handlers
     h_transactions = API_Transactions_Handler(config)

@@ -52,6 +52,7 @@ def load(fpath: Path):
 
 
 def save(fpath: Path, df: pd.DataFrame):
+    df["amount"] = df["amount"].apply(lambda x: f"{x.currency} {x.amount}")
     df.to_csv(str(fpath),
         sep=";",
         index=False

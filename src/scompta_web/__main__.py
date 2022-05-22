@@ -7,6 +7,7 @@
  May 2022
 """
 
+import logging
 import numpy
 import pandas as pd
 
@@ -23,6 +24,13 @@ from   pathlib     import Path
 from   functools   import partial
 
 from   money       import Money
+
+# ┌────────────────────────────────────────┐
+# │ Instanciate logger                     │
+# └────────────────────────────────────────┘
+
+log = logging.getLogger(__file__)
+
 
 # ┌────────────────────────────────────────┐
 # │ Config dataclass                       │
@@ -67,9 +75,22 @@ class API_Transactions_Handler:
         transactions_path = self._transactions_path_for_period(period)
 
         if not transactions_path.exists():
-            raise API_Error(f"transactions for period {period} not found", error_code=404)
+            raise FileNotFoundError()
 
         return transactions.load(transactions_path)
+
+    def _create_transactions_period(self, period):
+        log.info(f"Create period {period}")
+
+        path_csv = self._transactions_path_for_period(period).resolve()
+        path_dir = (path_csv / "../").resolve()
+
+        log.debug(f"Create directory {path_dir}")
+        path_dir.mkdir(mode=511)
+
+        # Touch transactions.csv
+        log.debug(f"Touch transactions.csv file")
+        transactions.create(path_csv)
 
 
     # ─────────────── GET stuff ────────────── #
@@ -122,9 +143,15 @@ class API_Transactions_Handler:
         try:
             data = await request.json()
 
-            # Load transactions
+            # Load transactions or create if not found
             period = request.match_info["period"]
-            df_tr  = self._load_transactions_period(period)
+            
+            try:
+                df_tr  = self._load_transactions_period(period)
+            except FileNotFoundError as exc:
+                self._create_transactions_period(period)
+                df_tr  = self._load_transactions_period(period)
+
 
             # Build entry record
             record = {
@@ -158,14 +185,19 @@ class API_Transactions_Handler:
                 "traceback": traceback.format_exc().split("\n")
             }, status=exc.error_code)
 
+        except FileNotFoundError as exc:
+            return web.json_response({
+                "error": f"Could not post transaction: {exc!s}",
+                "traceback": traceback.format_exc().split("\n")
+            }, status=404)
+
         except Exception as exc:
             return web.json_response({
                 "error": f"Could not post transaction: {exc!s}",
                 "traceback": traceback.format_exc().split("\n")
             }, status=500)
 
-
-
+    
 
     # ──────────── Routes property ─────────── #
 
@@ -229,6 +261,8 @@ class API_Accounts_Handler:
 # └────────────────────────────────────────┘
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.DEBUG)
+
     app = web.Application()
 
     # Load config

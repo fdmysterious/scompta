@@ -58,6 +58,12 @@ def save(fpath: Path, df: pd.DataFrame):
         index=False
     )
 
+def create(fpath: Path):
+    """
+    Create boilerplate CSV file
+    """
+    fpath.write_text("day;time;label;from;to;amount;tag")
+
 
 # ┌────────────────────────────────────────┐
 # │ Check undefined accounts               │

@@ -22,6 +22,8 @@ from   dataclasses import dataclass, asdict
 from   pathlib     import Path
 from   functools   import partial
 
+from   money       import Money
+
 # ┌────────────────────────────────────────┐
 # │ Config dataclass                       │
 # └────────────────────────────────────────┘
@@ -77,13 +79,6 @@ class API_Transactions_Handler:
             # Extract period
             period = request.match_info["period"]
 
-            #path_transactions = self._transactions_path_for_period(period)
-            #if not path_transactions.exists():
-            #    return web.json_response({
-            #        "error": f"Could not find period {period}"
-            #    }, status=404)
-
-
             # Load period's transactions
             df_tr = self._load_transactions_period(period)
             df_tr["amount"] = df_tr["amount"].transform(lambda x: {"currency": x.currency, "amount": str(x.amount)})
@@ -128,11 +123,27 @@ class API_Transactions_Handler:
             data = await request.json()
 
             # Load transactions
+            period = request.match_info["period"]
+            df_tr  = self._load_transactions_period(period)
 
             # Build entry record
-            record = {"day": data["day"], "time": data.get("time", None), "amount": Money(data["amount"]["value"], data["amount"]["currency"])}
+            record = {
+                "day":   data["day"],
+                "time":  data.get("time", None),
+                "label": data["label"],
+                "from":  data["from"],
+                "to":    data["to"],
+                "amount": Money(data["amount"]["value"], data["amount"]["currency"]),
+                "tag":   data.get("tag", None)
+            }
 
-            # Build 
+            # Add entry record to dataframe
+            df_tr = pd.concat([df_tr, pd.DataFrame.from_records([record])])
+
+            # Save transactions!
+            transactions.save(self._transactions_path_for_period(period), df_tr)
+
+            # Return 200 response
             return web.json_response({}, status=200)
 
         except KeyError  as exc:

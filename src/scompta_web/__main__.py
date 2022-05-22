@@ -118,6 +118,11 @@ class API_Transactions_Handler:
                 "traceback": traceback.format_exc().split("\n")
             }, status=exc.error_code)
 
+        except FileNotFoundError:
+            return web.json_response({
+                "error": f"Period not found: {period}"
+            }, status=404)
+
         except Exception as exc:
             return web.json_response({
                 "error": f"Could not load transactions: {exc!s}",
@@ -197,17 +202,63 @@ class API_Transactions_Handler:
                 "traceback": traceback.format_exc().split("\n")
             }, status=500)
 
+
+    # ────────── DELETE transaction ────────── #
+
+    async def delete(self, request):
+        period = None
+        tr_id  = None
+
+        try:
+            # Extract info
+            period = request.match_info["period"]
+            tr_id  = int(request.match_info["id"])
+
+            # Load transactions
+            df_tr = self._load_transactions_period(period)
+
+            # Delete transaction
+            df_tr = df_tr.drop([tr_id])
+
+            # Save data back
+            tr_path = self._transactions_path_for_period(period)
+            transactions.save(tr_path, df_tr)
+
+            # Return response
+            return web.json_response({}, status=200)
+
+        except API_Error as exc:
+            return web.json_response({
+                "error": f"Could not delete transaction: {exc!s}",
+                "traceback": traceback.format_exc().split("\n")
+            }, status=exc.error_code)
+
+        except FileNotFoundError as exc:
+            return web.json_response({
+                "error": f"Period {period} not found",
+                "traceback": traceback.format_exc().split("\n")
+            }, status=404)
+
+        except Exception as exc:
+            return web.json_response({
+                "error": f"Could not delete transaction: {exc!s}",
+                "traceback": traceback.format_exc().split("\n")
+            }, status=500)
+
     
 
     # ──────────── Routes property ─────────── #
 
     def routes(self, prefix=""):
         return [
-            web.get (prefix + "/transactions/{period:\d{4}-\d{2}}", self.all_get),
-            web.get (prefix + "/transactions/{inv_period}"        , lambda r: self.raise_error(f"Invalid period name: {r.match_info['inv_period']}", 404)),
+            web.get   (prefix + "/transactions/{period:\d{4}-\d{2}}", self.all_get),
+            web.get   (prefix + "/transactions/{inv_period}"        , lambda r: self.raise_error(f"Invalid period name: {r.match_info['inv_period']}", 404)),
 
-            web.post(prefix + "/transactions/{period:\d{4}-\d{2}}", self.post),
-            web.post(prefix + "/transactions/{inv_period}"        , lambda r: self.raise_error(f"Invalid period name: {r.match_info['inv_period']}", 404)),
+            web.post  (prefix + "/transactions/{period:\d{4}-\d{2}}", self.post),
+            web.post  (prefix + "/transactions/{inv_period}"        , lambda r: self.raise_error(f"Invalid period name: {r.match_info['inv_period']}", 404)),
+
+            web.delete(prefix + "/transactions/{period:\d{4}-\d{2}}/{id:\d+}", self.delete),
+            web.delete(prefix + "/transactions/{period:\d{4}-\d{2}}/{inv_id}", lambda r: self.raise_error(f"Invalid transaction ID: {r.match_info['inv_id']}", 404))
         ]
 
 
@@ -240,6 +291,11 @@ class API_Accounts_Handler:
                 "error": f"Could not load accounts: {exc!s}",
                 "traceback": traceback.format_exc().split("\n")
             }, status=exc.error_code)
+
+        except FileNotFoundError as exc:
+            return web.json_response({
+                "error": f"Could not find period {period}"
+            }, status=404)
 
         except Exception as exc:
             return web.json_response({

@@ -13,6 +13,7 @@ import traceback
 import toml
 import pandas as pd
 
+from itertools   import chain
 from dataclasses import dataclass, field, asdict
 from enum        import Enum
 from pathlib     import Path
@@ -44,6 +45,31 @@ class Account:
     name: str
     type: Account_Type
     tag:  Optional[str] = field(default=None)
+
+
+# ┌────────────────────────────────────────┐
+# │ Load/Save/Create                       │
+# └────────────────────────────────────────┘
+
+def save(account: Account, fpath: Path):
+
+    acc_path = fpath / f"{account.path}.toml"
+    log.info(f"Save account {account.name} to {acc_path}")
+
+    # Compute base directory path
+    basedir = (acc_path / "..").resolve()
+
+    # Create basedir if it doesn't exist
+    if not basedir.exists():
+        log.info("Create directory {basedir}")
+        basedir.mkdir(parents=True)
+
+    # Save to file
+    with open(acc_path, "w") as fhandle:
+        data = asdict(account)
+        del data["path"]
+
+        toml.dump({"account": data}, fhandle)
 
 
 # ┌────────────────────────────────────────┐

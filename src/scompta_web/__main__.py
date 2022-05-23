@@ -303,13 +303,52 @@ class API_Accounts_Handler:
                 "traceback": traceback.format_exc().split("\n")
             }, status=500)
 
+    # ──────────── POST endpoints ──────────── #
+    
+    async def post(self, request):
+        try:
+            path = request.match_info["path"]
+            info = await request.json()
+
+            # Instanciate account
+            account = accounts.Account(path=path,
+                name = info["name"],
+                type = info["type"],
+                tag  = info.get("tag", None)
+            )
+
+            # Save to file
+            accounts.save(account, self.config.dir_accounts)
+
+            return web.json_response({}, status=200)
+
+
+        except KeyError  as exc:
+            return web.json_response({
+                "error": f"Missing field {exc!s}"
+            }, status=400)
+
+        except API_Error as exc:
+            return web.json_response({
+                "error": f"Could not create account: {exc!s}",
+                "traceback": traceback.format_exc().split("\n")
+            }, status=exc.error_code)
+
+        except Exception as exc:
+            return web.json_response({
+                "error": f"Could not create account: {exc!s}",
+                "traceback": traceback.format_exc().split("\n")
+            }, status=500)
+
+
+
     # ──────────────── Routes ──────────────── #
 
     def routes(self, prefix=""):
         return [
-            web.get(f"{prefix}/accounts", self.all_get)
+            web.get (f"{prefix}/accounts",          self.all_get),
+            web.post(f"{prefix}/accounts/{{path}}", self.post   )
         ]
-    
 
 
 # ┌────────────────────────────────────────┐

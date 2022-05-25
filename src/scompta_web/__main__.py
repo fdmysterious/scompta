@@ -388,4 +388,4 @@ if __name__ == "__main__":
         cors.add(route)
 
     # Server start
-    web.run_app(app)
+    web.run_app(app, port=8888)

@@ -17,7 +17,7 @@ import toml
 from   aiohttp     import web
 import aiohttp_cors
 
-from   scompta     import transactions, accounts
+from   scompta     import transactions, accounts, periods
 from   dataclasses import dataclass, asdict
 
 from   pathlib     import Path
@@ -128,6 +128,16 @@ class API_Transactions_Handler:
                 "error": f"Could not load transactions: {exc!s}",
                 "traceback": traceback.format_exc().split("\n")
             }, status=500)
+
+    async def periods_get(self, request):
+        try:
+            return web.json_response({"periods": list(map(lambda x: x.name, periods.list_from_dir(self.config.dir_periods)))})
+        except Exception as exc:
+            return web.json_response({
+                "error": f"Could not get list of periods: {exc!s}",
+                "traceback": traceback.format_exc().split("\n")
+            }, status=500)
+
 
     async def raise_error(self, err_msg, err_code):
         return web.json_response({"error": err_msg}, status=err_code)
@@ -251,7 +261,9 @@ class API_Transactions_Handler:
 
     def routes(self, prefix=""):
         return [
-            web.get   (prefix + "/transactions/{period:\d{4}-\d{2}}", self.all_get),
+            web.get   (prefix + "/transactions/periods"             , self.periods_get ),
+            web.get   (prefix + "/transactions/{period:\d{4}-\d{2}}", self.all_get     ),
+
             web.get   (prefix + "/transactions/{inv_period}"        , lambda r: self.raise_error(f"Invalid period name: {r.match_info['inv_period']}", 404)),
 
             web.post  (prefix + "/transactions/{period:\d{4}-\d{2}}", self.post),

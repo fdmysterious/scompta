@@ -92,6 +92,10 @@ def undefined_accounts(df, accs_df):
 # └────────────────────────────────────────┘
 
 def input(df, df_accounts, account_names: str):
+    """
+    List transactions that add money to the given accounts
+    """
+
     accs = account_names
     if isinstance(accs, str):
         accs = [accs]
@@ -104,6 +108,10 @@ def input(df, df_accounts, account_names: str):
 
 
 def output(df, df_accounts, account_names: str):
+    """
+    List transactions that retrieve money from the given accounts
+    """
+
     accs = account_names
     if isinstance(accs, str):
         accs = [accs]

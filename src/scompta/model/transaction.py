@@ -1,0 +1,34 @@
+"""
+┌────────────────────┐
+│ Transactions model │
+└────────────────────┘
+
+ Florian Dupeyron
+ October 2022
+"""
+
+from money       import Money
+
+from .account    import Account
+from .account    import Account_Type
+
+from dataclasses import dataclass
+
+from typing      import Optional
+
+
+# ┌────────────────────────────────────────┐
+# │ Main trasaction dataclass              │
+# └────────────────────────────────────────┘
+
+@dataclass
+class Transaction:
+    day: int
+    time: str
+
+    label: str
+    from: str
+    to: str
+
+    amount: Money
+    tag: Optional[str]

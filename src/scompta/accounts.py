@@ -19,32 +19,12 @@ from enum        import Enum
 from pathlib     import Path
 from typing      import Optional
 
+from .model.account import (
+    Account,
+    Account_Type,
+)
+
 log = logging.getLogger("SCompta Accounts")
-
-
-# ┌────────────────────────────────────────┐
-# │ Account types                          │
-# └────────────────────────────────────────┘
-
-class Account_Type(Enum):
-    Liabilities = "liabilities"
-    Assets      = "assets"
-    Equity      = "equity"
-
-    Income      = "income"
-    Outcome     = "outcome"
-
-
-# ┌────────────────────────────────────────┐
-# │ Accounts dataclass                     │
-# └────────────────────────────────────────┘
-
-@dataclass
-class Account:
-    path: str
-    name: str
-    type: Account_Type
-    tag:  Optional[str] = field(default=None)
 
 
 # ┌────────────────────────────────────────┐

@@ -11,11 +11,10 @@ import logging
 
 import pandas as pd
 
-from   pathlib import Path
-from   money   import Money
+from   pathlib      import Path
+from   money        import Money
 
-from .         import accounts
-from .accounts import Account_Type
+from .model.account import Account_Type
 
 
 # ┌────────────────────────────────────────┐

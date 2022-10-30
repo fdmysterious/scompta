@@ -31,7 +31,7 @@ Accounts
 This toolkit implements a double-entry like bookkeeping system, inspired by Gnucash_. This means:
 
 - Everything is an account (no category system) ;
-- For every transaction, there is a source account, and a destination account. For instance, your checking account, to the account representing your rent.
+- For every transaction, there is an "origin" account, and a "target" account. For instance, your checking account, to the account representing your rent.
 
 There are currently four major types of accounts:
 
@@ -175,8 +175,12 @@ fix the amounts to save in various accounts:
     import logging
 
     from pathlib import Path
-    from scompta import accounts, transactions
     from decimal import Decimal
+
+    import scompta.db.accounts        as accounts_db
+    import scompta.db.transactions    as transactions_db
+
+    import scompta.views.transactions as transactions_views
 
     # Helper to parse directories
     def __parse_dir(x):
@@ -196,15 +200,15 @@ fix the amounts to save in various accounts:
     args = parser.parse_args()
 
     # Load accounts
-    df_accs         = accounts.load_from_dir(root_dir / "accounts")
-    df_transactions = transactions.load(args.folder / "transactions.csv")
+    df_accs         = accounts_db.load_from_dir(root_dir / "accounts")
+    df_transactions = transactions_db.load(args.folder / "transactions.csv")
 
     # Find assets accounts
     df_accs_assets  = accounts.with_type(accounts.Account_Type.Assets)
 
     # Find gain and losses transactions
-    t_in  = transactions.input (df_transactions, df_accs, df_accs_assets.index)
-    t_out = transactions.output(df_transactions, df_accs, df_accs_assets.index)
+    t_in  = transactions_views.input (df_transactions, df_accs, df_accs_assets.index)
+    t_out = transactions_views.output(df_transactions, df_accs, df_accs_assets.index)
 
     # Compute total gains and losses, and final balance
     v_in  = t_in["amount"].sum()

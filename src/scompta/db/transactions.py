@@ -17,6 +17,8 @@ from money   import Money
 from scompta.model.account     import Account_Type
 from scompta.model.transaction import Transaction
 
+log = logging.getLogger(__file__)
+
 
 # ┌────────────────────────────────────────┐
 # │ Helpers                                │
@@ -50,3 +52,23 @@ def load(fpath: Path):
     # TODO
 
     return csv_data
+
+
+def save(fpath: Path, df: pd.DataFrame):
+    df["amount"] = df["amount"].apply(lambda x: f"{x.currency} {x.amount}")
+    df.to_csv(str(fpath),
+        sep=";",
+        index=False
+    )
+
+
+# ┌────────────────────────────────────────┐
+# │ Create from boilerplate                │
+# └────────────────────────────────────────┘
+
+def create(fpath: Path):
+    """
+    Create boilerplace CSV file for transaction list
+    """
+    log.info("Initialize transactions list in {fpath}")
+    fpath.write_text("day;time;label;origin;target;amount;tag")

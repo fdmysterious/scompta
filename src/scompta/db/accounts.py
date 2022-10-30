@@ -13,6 +13,8 @@ import traceback
 import toml
 import pandas as pd
 
+from dataclasses import asdict
+
 from pathlib import Path
 
 from scompta.model.account import (
@@ -68,3 +70,29 @@ def load_from_dir(root_path: Path):
     accs_gen = map(load_acc, root_path.glob("**/*.toml"))
 
     return pd.DataFrame(accs_gen).set_index("path")
+
+
+# ┌────────────────────────────────────────┐
+# │ Save to file                           │
+# └────────────────────────────────────────┘
+
+def save(account: Account, fpath: Path):
+
+    acc_path = fpath / f"{account.path}.toml"
+    log.info(f"Save account {account.name} to {acc_path}")
+
+    # Compute base directory path
+    basedir = (acc_path / "..").resolve()
+
+    # Create basedir if it doesn't exist
+    if not basedir.exists():
+        log.info("Create directory {basedir}")
+        basedir.mkdir(parents=True)
+
+    # Save to file
+    with open(acc_path, "w") as fhandle:
+        data = asdict(account)
+        del data["path"]
+
+        toml.dump({"account": data}, fhandle)
+

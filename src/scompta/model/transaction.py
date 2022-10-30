@@ -27,8 +27,8 @@ class Transaction:
     time: str
 
     label: str
-    from: str
-    to: str
+    origin: str
+    target: str
 
     amount: Money
     tag: Optional[str]

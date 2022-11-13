@@ -38,7 +38,7 @@ def load_from_file(path: Path, acc_path):
 
     log.debug(f"Load account information from {path}'")
 
-    with open(path) as fhandle:
+    with open(path, "r") as fhandle:
         # Get and process data
         acc_data = toml.load(fhandle)["account"]
         if "type" in acc_data:

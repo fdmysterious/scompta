@@ -123,6 +123,13 @@ The recommended folder hierarchy is the following:
     │   │   └── transactions.csv
     │   └── 2022-05
     │       └── transactions.csv
+    ├── sources
+    │   ├── 2022-01
+    │   │   ├── account1.qif
+    │   │   └── account2.ofx
+    │   └── 2022-02
+    │       ├── account1.qif
+    │       └── account2.ofx
     └── reports
         ├── report1.py
         └── report2.py
@@ -136,15 +143,15 @@ Transactions for 1 period (= 1 month) are stored in a CSV file. For example:
 
 .. code:: csv
     
-    day;time;label;from;to;amount;tag
-    2;;Salary may;income/person1/salary;assets/person1/checking;EUR 1000.000;salary
-    3;;Rent may;assets/person1/checking;outcome/common/household/loan;EUR 300.0;rent
-    5;12:00;Lunch;assets/person1/checking;outcome/person1/food;10.00;
+    day;time;label;from;to;amount;label;tag
+    2;;Salary may;income/person1/salary;assets/person1/checking;EUR 1000.000;Salary stuff;salary
+    3;;Rent may;assets/person1/checking;outcome/common/household/loan;EUR 300.0;Truc;rent
+    5;12:00;Lunch;assets/person1/checking;outcome/person1/food;10.00;;
 
 **Please note**:
 
-- Accounts are identified by their relative path from the accounts folder, without the extension ;
-- Currency information is given in the amount field ;
+- Accounts are identified by their relative path from the accounts folder, without the extension. This is called the **account slug**;
+- Currency information is given in the amount field;
 - This specific header is mandatory.
 
 As the CSV format is pretty common, you can use your favorite tool to edit it. For instance, if you
@@ -235,3 +242,50 @@ fix the amounts to save in various accounts:
     print(f"Account 2: {v_savings_2}")
     print(f"Account 3: {v_savings_3}")
     print(f"Account 4: {v_savings_4}")
+
+
+Example import script
+=====================
+
+This example shows how the importer modules can be used to help import various account files into
+a transaction list.
+
+.. code:: python
+
+   from argparse    import ArgumentParser
+   from dataclasses import asdict
+
+   from scompta.db  import transactions as strans
+   from scompta     import importer
+
+   import pandas as pd
+   import logging
+
+   if __name__ == "__main__":
+        logging.basicConfig(level=logging.INFO)
+        log = logging.getLogger("Sources processor")
+
+        parser = ArgumentParser(description="Import files into period")
+        parser.add_argument("period", help="target period")
+        
+        args = parser.parse_args()
+
+        log.info(f"Process period {args.period}")
+
+        transactions  = []
+        transactions += importer.ofx.from_file("accounts/assets/person1/checking", f"sources/{args.period}/person1/checking.ofx")
+        transactions += importer.qif.from_file("accounts/assets/person2/checking", f"sources/{args.period}/person2/checking.qif")
+
+        # FIXME # Importers should return a dataframe?
+        df = pd.DataFrame.from_records([asdict(x) for x in transactions])
+
+        # Backup?
+        output_path = Path(f"periods/{args.period}/transactions.csv")
+        if output_path.is_file():
+            dt = datetime.now()
+            backup_path = output_path.parent / f"{output_path.stem}-{dt.year}-{dt.month}-{dt.day}.csv"
+            log.warn(f"{output_path} already exists, backup to {backup_path}")
+            backup_path.write_bytes(output_path.read_bytes())
+
+        log.info(f"Writing to {output_path}")
+        strans.save(output_path, df)

@@ -26,9 +26,9 @@ class Transaction:
     day: int
     time: str
 
-    label: str
     origin: str
     target: str
-
     amount: Money
+
+    label: Optional[str]
     tag: Optional[str]
